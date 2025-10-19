@@ -2,65 +2,63 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 )
 
 func Test(t *testing.T) {
 	type testCase struct {
-		numDBs int
+		n        int
+		expected []int
 	}
 
 	runCases := []testCase{
-		{1},
-		{3},
-		{4},
+		{5, []int{0, 1, 1, 2, 3}},
+		{3, []int{0, 1, 1}},
 	}
 
 	submitCases := append(runCases, []testCase{
-		{0},
-		{13},
+		{0, []int{}},
+		{1, []int{0}},
+		{7, []int{0, 1, 1, 2, 3, 5, 8}},
 	}...)
 
 	testCases := runCases
 	if withSubmit {
 		testCases = submitCases
 	}
+
 	skipped := len(submitCases) - len(testCases)
 
-	passed, failed := 0, 0
+	passCount := 0
+	failCount := 0
 
 	for _, test := range testCases {
-		fmt.Printf(`---------------------------------`)
-		fmt.Printf("\nTesting %v Databases...\n\n", test.numDBs)
-		dbChan, count := getDBsChannel(test.numDBs)
-		waitForDBs(test.numDBs, dbChan)
-		for *count != test.numDBs {
-			fmt.Println("...")
-		}
-		if len(dbChan) == 0 && *count == test.numDBs {
-			passed++
-			fmt.Printf(`
-expected length: 0, count: %v
-actual length:   %v, count: %v
-PASS
-`,
-				test.numDBs, len(dbChan), *count)
+		actual := concurrentFib(test.n)
+		if !slices.Equal(actual, test.expected) {
+			failCount++
+			t.Errorf(`---------------------------------
+Test Failed:
+  n:        %v
+  expected: %v
+  actual:   %v
+`, test.n, test.expected, actual)
 		} else {
-			failed++
-			fmt.Printf(`
-expected length: 0, count: %v
-actual length:   %v, count: %v
-FAIL
-`,
-				test.numDBs, len(dbChan), *count)
+			passCount++
+			fmt.Printf(`---------------------------------
+Test Passed:
+  n:        %v
+  expected: %v
+  actual:   %v
+`, test.n, test.expected, actual)
 		}
 	}
 
 	fmt.Println("---------------------------------")
 	if skipped > 0 {
-		fmt.Printf("%d passed, %d failed, %d skipped\n", passed, failed, skipped)
+		fmt.Printf("%d passed, %d failed, %d skipped\n", passCount, failCount, skipped)
 	} else {
-		fmt.Printf("%d passed, %d failed\n", passed, failed)
+		fmt.Printf("%d passed, %d failed\n", passCount, failCount)
 	}
 
 }
